@@ -1,78 +1,92 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import CentralObject from './CentralObject';
-import VisionCone from './VisionCone';
 import Person from './Person';
 import * as THREE from 'three';
+
+// Define simple colors
+const simpleColors = ["#4ADE80", "#FB7185", "#60A5FA", "#F59E0B"]; // Red, Blue, Green, Orange
 
 // Scene setup
 const Scene = () => {
   const sceneRef = useRef<THREE.Group>(null);
-  // Center position that all characters look at
-  const centerPosition: [number, number, number] = [0, 1, 0];
-  // Positions for the people around the center
-  const personPositions = [
-    { position: [3, 0, 0], rotation: [0, -Math.PI / 2, 0], color: '#4ADE80' },  // Right (green)
+  // Center position - used for the object and one person's target
+  const centerPosition = useMemo<[number, number, number]>(() => [0, 1, 0], []);
 
-    { position: [-3, 0, 0], rotation: [0, Math.PI / 2, 0], color: '#FB7185' },  // Left (red)
+  // Generate random positions, rotations, and look-at targets for people
+  const peopleData = useMemo(() => {
+    const people = [];
+    const numPeople = 4; // Number of people
+    const radius = 3; // Distance from center for placement
+    const lookAtRadius = 2; // Max distance from origin for random look-at target
 
-    { position: [0, 0, 3], rotation: [0, Math.PI, 0], color: '#60A5FA' },      // Back (blue)
+    for (let i = 0; i < numPeople; i++) {
+      // Placement position
+      const angle = Math.random() * Math.PI * 2; // Random angle for placement
+      const x = Math.sin(angle) * radius;
+      const z = Math.cos(angle) * radius;
+      const position: [number, number, number] = [x, 0, z];
+      
+      // Random look-at target for the vision cone (initially)
+      const targetAngle = Math.random() * Math.PI * 2;
+      const targetRadius = Math.random() * lookAtRadius;
+      const targetX = Math.sin(targetAngle) * targetRadius;
+      const targetZ = Math.cos(targetAngle) * targetRadius;
+      let lookAtTarget: [number, number, number] = [targetX, centerPosition[1], targetZ]; 
+      
+      // Assign color from the simple list
+      const color = simpleColors[i % simpleColors.length];
 
-    { position: [0, 0, -3], rotation: [0, 0, 0], color: '#F59E0B' },           // Front (orange)
-
-  ];
-
-  // Gentle rotation of the entire scene
-
-  useFrame(({ clock }) => {
-
-    if (sceneRef.current) {
-
-      sceneRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.1) * 0.05;
-
+      people.push({ position, lookAtTarget, color });
     }
 
+    // Randomly select one person to look at the center
+    if (people.length > 0) {
+      const lookAtCenterIndex = Math.floor(Math.random() * people.length);
+      people[lookAtCenterIndex].lookAtTarget = centerPosition;
+    }
+
+    // Compute rotation based on lookAtTarget
+    return people.map(p => {
+      const [px, , pz] = p.position;
+      const [tx, , tz] = p.lookAtTarget;
+      const rotY = Math.atan2(tx - px, tz - pz);
+      return { ...p, rotation: [0, rotY, 0] as [number, number, number] };
+    });
+  }, [centerPosition]); // Dependency remains
+
+
+  // Gentle rotation of the entire scene
+  useFrame(({ clock }) => {
+    if (sceneRef.current) {
+      sceneRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.1) * 0.05;
+    }
   });
 
   return (
-
     <group ref={sceneRef}>
-
-      {/* Central object that everyone is looking at */}
-
+      {/* Central object */}
       <CentralObject position={centerPosition} />
 
-      {/* Place people around the central object */}
-
-      {personPositions.map((props, index) => (
-
+      {/* Place people around */}
+      {peopleData.map((props, index) => (
         <Person 
-
           key={index} 
-
-          {...props} 
-
-          lookAt={centerPosition}
-
+          position={props.position}
+          rotation={props.rotation}
+          color={props.color}
+          lookAt={props.lookAtTarget} // Use the random target for vision cone
         />
-
       ))}
 
       {/* Ground plane */}
-
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.75, 0]} receiveShadow>
-
         <planeGeometry args={[20, 20]} />
-
         <meshStandardMaterial color="#1E293B" />
-
       </mesh>
-
     </group>
-
   );
-
 };
 
 // Main component
