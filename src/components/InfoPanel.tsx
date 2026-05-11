@@ -28,24 +28,24 @@ const InfoPanel: React.FC<InfoPanelProps> = ({ onClose }) => {
         <section>
           <h3 className="text-lg font-semibold mb-2 text-blue-400">The Concept</h3>
           <p className="text-slate-300">
-            This 3D scene illustrates the philosophical concept that people can look at the same object but see it differently based on their position and perspective.
+            Four people, one scene, four irreconcilable accounts of what's there. Each holds their gaze on something different — and each is convinced that <em>that</em> is the thing worth looking at. Perspective doesn't just colour reality; it selects it.
           </p>
         </section>
-        
+
         <section>
-          <h3 className="text-lg font-semibold mb-2 text-blue-400">What You're Seeing</h3>
+          <h3 className="text-lg font-semibold mb-2 text-blue-400">Four Gazes</h3>
           <ul className="text-slate-300 space-y-2 list-disc pl-5">
-            <li>Each figure represents a person with a unique viewpoint</li>
-            <li>The colored cones represent their field of vision</li>
-            <li>The vase in the center is the shared object of attention</li>
-            <li>Notice how each person has a different angle on the same object</li>
+            <li><span className="text-green-400 font-medium">Green</span> — fixes on the object. The empiricist: <em>the thing is the thing, look at it.</em></li>
+            <li><span className="text-blue-400 font-medium">Blue</span> — looks past the world. The transcendentalist: <em>meaning is above the object, not in it.</em></li>
+            <li><span className="text-amber-400 font-medium">Orange</span> — watches the green gazer. The sociologist of knowledge: <em>I don't study things, I study how people see them.</em></li>
+            <li><span className="text-rose-400 font-medium">Rose</span> — looks at <em>you</em>. The recursive twist: your "neutral" view of this scene is itself a perspective.</li>
           </ul>
         </section>
-        
+
         <section>
-          <h3 className="text-lg font-semibold mb-2 text-blue-400">Beyond The Visual</h3>
+          <h3 className="text-lg font-semibold mb-2 text-blue-400">Why It Matters</h3>
           <p className="text-slate-300">
-            This visualization serves as a metaphor for how our backgrounds, experiences, and positions in life affect how we perceive and interpret reality. Even when looking at the same "truth," our perspective shapes what we see.
+            We talk about objectivity as if it were a place you could stand. But every claim to see things "as they really are" rests on prior commitments — what counts as evidence (epistemology), what counts as real (ontology), what counts as worth attending to. Even the camera angle is an angle.
           </p>
         </section>
         

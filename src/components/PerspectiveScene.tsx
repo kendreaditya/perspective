@@ -1,86 +1,132 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import CentralObject from './CentralObject';
 import Person from './Person';
 import * as THREE from 'three';
 
-// Define simple colors
-const simpleColors = ["#4ADE80", "#FB7185", "#60A5FA", "#F59E0B"]; // Red, Blue, Green, Orange
+// Four perspectives on the same reality.
+//   objectGazer    — looks at the centerpiece. The empiricist: the thing IS the thing.
+//   skyGazer       — looks past the world. The transcendentalist: meaning is beyond the object.
+//   gazerObserver  — looks at the object-gazer. The sociologist: studies how others construct reality.
+//   viewerGazer    — looks at the camera (you). The recursive twist: your "neutral" view is a perspective too.
 
-// Scene setup
+type Role = 'objectGazer' | 'skyGazer' | 'gazerObserver' | 'viewerGazer';
+
+interface PersonSpec {
+  role: Role;
+  position: [number, number, number];
+  color: string;
+  lookAt: [number, number, number];
+}
+
 const Scene = () => {
   const sceneRef = useRef<THREE.Group>(null);
-  // Center position - used for the object and one person's target
   const centerPosition = useMemo<[number, number, number]>(() => [0, 1, 0], []);
 
-  // Generate random positions, rotations, and look-at targets for people
-  const peopleData = useMemo(() => {
-    const people = [];
-    const numPeople = 4; // Number of people
-    const radius = 3; // Distance from center for placement
-    const lookAtRadius = 2; // Max distance from origin for random look-at target
+  const objectGazerPos: [number, number, number] = [3, 0, 0.5];
+  const skyGazerPos: [number, number, number] = [-3, 0, 0.5];
+  const gazerObserverPos: [number, number, number] = [-2.2, 0, 2.6];
+  const viewerGazerPos: [number, number, number] = [1.5, 0, -3];
 
-    for (let i = 0; i < numPeople; i++) {
-      // Placement position
-      const angle = Math.random() * Math.PI * 2; // Random angle for placement
-      const x = Math.sin(angle) * radius;
-      const z = Math.cos(angle) * radius;
-      const position: [number, number, number] = [x, 0, z];
-      
-      // Random look-at target for the vision cone (initially)
-      const targetAngle = Math.random() * Math.PI * 2;
-      const targetRadius = Math.random() * lookAtRadius;
-      const targetX = Math.sin(targetAngle) * targetRadius;
-      const targetZ = Math.cos(targetAngle) * targetRadius;
-      let lookAtTarget: [number, number, number] = [targetX, centerPosition[1], targetZ]; 
-      
-      // Assign color from the simple list
-      const color = simpleColors[i % simpleColors.length];
+  const staticPeople = useMemo<PersonSpec[]>(() => [
+    {
+      role: 'objectGazer',
+      position: objectGazerPos,
+      color: '#4ADE80', // green
+      lookAt: centerPosition,
+    },
+    {
+      role: 'skyGazer',
+      position: skyGazerPos,
+      // Up into space, slightly toward "above the centerpiece" to suggest the gaze
+      // passes beyond the world rather than randomly skyward.
+      lookAt: [skyGazerPos[0] * 0.3, 10, skyGazerPos[2] * 0.3],
+      color: '#60A5FA', // blue
+    },
+    {
+      role: 'gazerObserver',
+      position: gazerObserverPos,
+      // Look at the object-gazer's head, not at the centerpiece.
+      lookAt: [objectGazerPos[0], 1.1, objectGazerPos[2]],
+      color: '#F59E0B', // orange
+    },
+  ], [centerPosition]);
 
-      people.push({ position, lookAtTarget, color });
-    }
+  // The viewer-gazer's target tracks the camera in scene-local space.
+  // Initialised to the camera's default starting position so the first frame
+  // already has them facing the viewer.
+  const [viewerLookAt, setViewerLookAt] = useState<[number, number, number]>([0, 5, 10]);
 
-    // Randomly select one person to look at the center
-    if (people.length > 0) {
-      const lookAtCenterIndex = Math.floor(Math.random() * people.length);
-      people[lookAtCenterIndex].lookAtTarget = centerPosition;
-    }
+  const tmpVec = useMemo(() => new THREE.Vector3(), []);
+  const eyeApprox = useMemo(
+    () => new THREE.Vector3(viewerGazerPos[0], 1.1, viewerGazerPos[2]),
+    []
+  );
 
-    // Compute rotation based on lookAtTarget
-    return people.map(p => {
-      const [px, , pz] = p.position;
-      const [tx, , tz] = p.lookAtTarget;
-      const rotY = Math.atan2(tx - px, tz - pz);
-      return { ...p, rotation: [0, rotY, 0] as [number, number, number] };
+  useFrame(({ camera, clock }) => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    // Gentle scene sway — a slow oscillation reminding the viewer the frame itself moves.
+    scene.rotation.y = Math.sin(clock.getElapsedTime() * 0.1) * 0.05;
+
+    // Camera position in scene-local coordinates.
+    tmpVec.copy(camera.position);
+    scene.worldToLocal(tmpVec);
+
+    // Clip the cone length so it ends in front of the viewer rather than at/through them.
+    const dir = tmpVec.clone().sub(eyeApprox);
+    const distance = dir.length();
+    if (distance < 0.001) return;
+    dir.normalize();
+    const targetLen = Math.min(distance * 0.6, 6.5);
+    const target = eyeApprox.clone().addScaledVector(dir, targetLen);
+
+    setViewerLookAt((prev) => {
+      if (
+        Math.abs(prev[0] - target.x) < 0.001 &&
+        Math.abs(prev[1] - target.y) < 0.001 &&
+        Math.abs(prev[2] - target.z) < 0.001
+      ) {
+        return prev;
+      }
+      return [target.x, target.y, target.z];
     });
-  }, [centerPosition]); // Dependency remains
-
-
-  // Gentle rotation of the entire scene
-  useFrame(({ clock }) => {
-    if (sceneRef.current) {
-      sceneRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.1) * 0.05;
-    }
   });
+
+  const viewerRotation = useMemo<[number, number, number]>(() => {
+    const [px, , pz] = viewerGazerPos;
+    const [tx, , tz] = viewerLookAt;
+    return [0, Math.atan2(tx - px, tz - pz), 0];
+  }, [viewerLookAt]);
 
   return (
     <group ref={sceneRef}>
-      {/* Central object */}
       <CentralObject position={centerPosition} />
 
-      {/* Place people around */}
-      {peopleData.map((props, index) => (
-        <Person 
-          key={index} 
-          position={props.position}
-          rotation={props.rotation}
-          color={props.color}
-          lookAt={props.lookAtTarget} // Use the random target for vision cone
-        />
-      ))}
+      {staticPeople.map((p) => {
+        const [px, , pz] = p.position;
+        const [tx, , tz] = p.lookAt;
+        const rotation: [number, number, number] = [0, Math.atan2(tx - px, tz - pz), 0];
+        return (
+          <Person
+            key={p.role}
+            position={p.position}
+            rotation={rotation}
+            color={p.color}
+            lookAt={p.lookAt}
+          />
+        );
+      })}
 
-      {/* Ground plane */}
+      <Person
+        position={viewerGazerPos}
+        rotation={viewerRotation}
+        color="#FB7185"
+        lookAt={viewerLookAt}
+      />
+
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.75, 0]} receiveShadow>
         <planeGeometry args={[20, 20]} />
         <meshStandardMaterial color="#1E293B" />
@@ -89,55 +135,29 @@ const Scene = () => {
   );
 };
 
-// Main component
-
 const PerspectiveScene: React.FC = () => {
-
   return (
-
     <Canvas shadows className="w-full h-full">
-
       <PerspectiveCamera makeDefault position={[0, 5, 10]} fov={50} />
-
-      <OrbitControls 
-
-        minPolarAngle={Math.PI * 0.1} 
-
+      <OrbitControls
+        minPolarAngle={Math.PI * 0.1}
         maxPolarAngle={Math.PI * 0.6}
-
         enableZoom={true}
-
         enablePan={false}
-
         minDistance={5}
-
         maxDistance={15}
-
       />
-
-      {/* Ambient and directional lighting */}
-
       <ambientLight intensity={0.5} />
-
-      <directionalLight 
-
-        position={[5, 10, 5]} 
-
-        intensity={1} 
-
-        castShadow 
-
-        shadow-mapSize-width={1024} 
-
+      <directionalLight
+        position={[5, 10, 5]}
+        intensity={1}
+        castShadow
+        shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
-
       />
-
       <Scene />
-
     </Canvas>
-
   );
-
 };
+
 export default PerspectiveScene;
