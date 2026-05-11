@@ -6,12 +6,12 @@ import Person from './Person';
 import * as THREE from 'three';
 
 // Four perspectives on the same reality.
-//   objectGazer      — looks at the form of the centerpiece. The empiricist: the thing IS the thing.
-//   foundationGazer  — looks at the base of the centerpiece. The foundationalist: meaning lies in what underlies.
-//   gazerObserver    — looks at the object-gazer. The sociologist: studies how others construct reality.
-//   viewerGazer      — looks at the camera (you). The recursive twist: your "neutral" view is a perspective too.
+//   objectGazer    — looks at the centerpiece. The empiricist: the thing IS the thing.
+//   outsideGazer   — looks away from the scene entirely. The outsider: every frame is partial; her object isn't in your picture.
+//   gazerObserver  — looks at the object-gazer. The sociologist: studies how others construct reality.
+//   viewerGazer    — looks at the camera (you). The recursive twist: your "neutral" view is a perspective too.
 
-type Role = 'objectGazer' | 'foundationGazer' | 'gazerObserver' | 'viewerGazer';
+type Role = 'objectGazer' | 'outsideGazer' | 'gazerObserver' | 'viewerGazer';
 
 interface PersonSpec {
   role: Role;
@@ -25,7 +25,7 @@ const Scene = () => {
   const centerPosition = useMemo<[number, number, number]>(() => [0, 1, 0], []);
 
   const objectGazerPos: [number, number, number] = [3, 0, 0.5];
-  const foundationGazerPos: [number, number, number] = [-3, 0, 0.5];
+  const outsideGazerPos: [number, number, number] = [-3, 0, 0.5];
   const gazerObserverPos: [number, number, number] = [-2.2, 0, 2.6];
   const viewerGazerPos: [number, number, number] = [1.5, 0, -3];
 
@@ -37,10 +37,11 @@ const Scene = () => {
       lookAt: centerPosition,
     },
     {
-      role: 'foundationGazer',
-      position: foundationGazerPos,
-      // Looks at the base of the vase — the foundation rather than the form.
-      lookAt: [0, 0.2, 0],
+      role: 'outsideGazer',
+      position: outsideGazerPos,
+      // 180° from the centerpiece — gazes outward, off the edge of the scene.
+      // Body faces -X, away from the other three perspectives.
+      lookAt: [-8, 1.0, 0.5],
       color: '#60A5FA', // blue
     },
     {

@@ -36,7 +36,7 @@ const InfoPanel: React.FC<InfoPanelProps> = ({ onClose }) => {
           <h3 className="text-lg font-semibold mb-2 text-blue-400">Four Gazes</h3>
           <ul className="text-slate-300 space-y-2 list-disc pl-5">
             <li><span className="text-green-400 font-medium">Green</span> — fixes on the object. The empiricist: <em>the thing is the thing, look at it.</em></li>
-            <li><span className="text-blue-400 font-medium">Blue</span> — looks at the base. The foundationalist: <em>the form is incidental; what matters is what it rests on.</em></li>
+            <li><span className="text-blue-400 font-medium">Blue</span> — turned 180°, looks outward, off the edge of the scene. The outsider: <em>every framing is partial; what I attend to isn't in your picture at all.</em></li>
             <li><span className="text-amber-400 font-medium">Orange</span> — watches the green gazer. The sociologist of knowledge: <em>I don't study things, I study how people see them.</em></li>
             <li><span className="text-rose-400 font-medium">Rose</span> — looks at <em>you</em>. The recursive twist: your "neutral" view of this scene is itself a perspective.</li>
           </ul>
